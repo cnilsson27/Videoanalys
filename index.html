@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="sv"><head><meta charset="utf-8"><title>Spelanalys – klipp & rita</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#10151c;--pn:#1a222d;--tx:#e8edf3;--mu:#8b97a6;--an:#ff7a1a;--fo:#2f9bff;--ln:#2b3644}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif}
+header{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--pn);border-bottom:1px solid var(--ln)}
+h1{font-size:16px;margin:0;flex:1}
+main{display:grid;grid-template-columns:1fr 330px;gap:12px;padding:12px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+button,select,input[type=text]{background:#243142;color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:7px 10px;font:inherit}
+button{cursor:pointer}button:hover{background:#2e4058}button.on{background:#3d5f8c;border-color:#6ea8ff}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+#wrap{position:relative;margin:0 auto;background:#000;width:100%;aspect-ratio:16/9}
+#wrap video{position:absolute;inset:0;width:100%;height:100%}
+#cv{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+#drop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mu);pointer-events:none}
+input[type=range]{width:100%}
+#bar{position:relative;height:10px;background:#0b0f14;border-radius:5px;margin-top:2px}
+#bar i{position:absolute;top:0;height:100%;opacity:.85;border-radius:3px}
+.panel{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-bottom:12px}
+.panel h2{font-size:13px;margin:0 0 6px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;color:#000;font-weight:600}
+.A{background:var(--an)}.F{background:var(--fo)}
+#list{max-height:340px;overflow:auto}
+.clip{display:flex;gap:6px;align-items:center;padding:6px;border-radius:6px;border:1px solid transparent}
+.clip.sel{border-color:#6ea8ff;background:#1f2b3a}.clip .nm{flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clip button{padding:3px 7px}
+kbd{background:#0b0f14;border:1px solid var(--ln);border-radius:4px;padding:0 5px;font-size:12px}
+small{color:var(--mu)}#st{color:var(--mu);min-height:18px}
+input[type=color]{width:34px;height:32px;padding:0;border:none;background:none}
+button,select,input[type=text]{min-height:44px;font-size:16px}
+.clip button{min-height:36px;padding:3px 10px}
+input[type=color]{width:44px;height:44px}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input[type=text]{-webkit-user-select:text;user-select:text}
+#ready button{background:#2f7d3e;font-weight:600}
+#gs button{padding:4px 10px;min-height:36px;border-radius:16px;font-size:14px}
+#tb{border-collapse:collapse;width:100%;font-size:14px}#tb th,#tb td{border:1px solid var(--ln);padding:6px 8px;text-align:center}
+#tb td:first-child{text-align:left;white-space:nowrap}#tb tr.tot{background:#243142;font-weight:700}#tb td.num{cursor:pointer;color:#6ea8ff;text-decoration:underline}
+</style></head><body>
+<header><h1>🤾 Handbollsanalys – klipp anfall &amp; försvar och rita</h1>
+<button onclick="f.click()">📂 Öppna film</button><button id="stb">📊 Statistik</button><input type="file" id="f" accept="video/*" hidden></header>
+<main><section>
+ <div id="wrap"><video id="v" playsinline webkit-playsinline preload="metadata"></video><canvas id="cv"></canvas><div id="drop">Öppna en lokal film (eller dra in den hit)</div></div>
+ <input type="range" id="sk" min="0" max="1000" value="0"><div id="bar"></div>
+ <div class="row">
+  <button id="pp">▶ Spela</button><button id="b1">⏪ 5s</button><button id="bf1">◀ bild</button><button id="bf2">bild ▶</button><button id="b2">5s ⏩</button>
+  <select id="sp"><option>0.25</option><option>0.5</option><option selected>1</option><option>1.5</option><option>2</option></select>×
+  <span id="tm">0:00 / 0:00</span>
+ </div>
+ <div class="panel"><h2>Skapa klipp</h2>
+  <div class="row"><button id="ms">[ Start (I)</button><span id="sv">–</span><button id="me">Slut (O) ]</button><span id="ev">–</span></div>
+  <div class="row"><select id="ty"><option value="A">🟠 Anfallsspel</option><option value="F">🔵 Försvarsspel</option></select><select id="sub"></select>
+  <input type="text" id="nm" placeholder="Namn (valfritt)" style="flex:1"><button id="sc">💾 Spara klipp (Enter)</button></div>
+  <div class="row" id="gs"></div><small>Ritningar du gör sparas tillsammans med klippet.</small></div>
+ <div class="panel"><h2>Rita</h2>
+  <div class="row" id="tools"></div>
+  <div class="row" id="fr" style="display:none"><b id="fi">Ruta 1/1</b><button id="fp">◀</button><button id="fn">▶</button><button id="fa">＋ Ny ruta</button><button id="fd">🗑 Ta bort ruta</button>
+  <button id="sq">▶ Spela sekvens</button><select id="ssp"><option value="0.5">Långsamt</option><option value="1" selected>Normalt</option><option value="2">Snabbt</option></select><button id="fe">🎞 Exportera film</button></div>
+  <div class="row"><input type="color" id="co" value="#ffe600"><input type="range" id="lw" min="2" max="14" value="5" style="width:110px">
+  <button id="ctb">🏟 Plan</button><button id="sn">📷 Spara bild</button><button id="dm" class="on">✏️ Rita på</button><button id="un">↩ Ångra (Ctrl+Z)</button><button id="cl">🗑 Rensa allt</button></div></div>
+ <div id="st"></div><div id="ready" class="row"></div>
+</section><aside>
+ <div class="panel"><h2>Klipp</h2>
+  <div class="row"><select id="fl"><option value="">Alla</option><option value="A">Anfall</option><option value="F">Försvar</option></select><select id="ft"></select>
+  <label><input type="checkbox" id="lp"> Loopa</label></div>
+  <div id="list"></div>
+  <div class="row"><button id="ej">⬇ Spara lista (JSON)</button><button onclick="ij.click()">⬆ Läs in</button><input type="file" id="ij" accept=".json" hidden>
+  <button id="ff">⬇ ffmpeg-skript</button></div></div>
+ <div class="panel"><h2>Kortkommandon</h2><small>
+ <kbd>Mellanslag</kbd> spela/paus · <kbd>I</kbd>/<kbd>O</kbd> start/slut · <kbd>←</kbd><kbd>→</kbd> 5s · <kbd>,</kbd><kbd>.</kbd> en bild · <kbd>Enter</kbd> spara klipp · <kbd>Ctrl+Z</kbd> ångra</small></div>
+</aside></main>
+<div id="md" style="display:none;position:fixed;inset:0;background:#000b;z-index:9;overflow:auto;padding:14px"><div class="panel" style="max-width:980px;margin:auto">
+<div class="row"><h2 style="flex:1;margin:0">Statistik</h2><button id="csv">⬇ CSV (Excel)</button><button id="mc">✕ Stäng</button></div>
+<div style="overflow:auto"><table id="tb"></table></div>
+<small>Tryck på en blå siffra för att spela upp just de klippen i följd. Mål-% = andel klipp taggade ⚽ Mål (för försvarsspel: mål mot er).</small></div></div>
+<script>
+const $=id=>document.getElementById(id),v=$('v'),cv=$('cv'),cx=cv.getContext('2d');
+let tool0=0,clips=[],cur=null,shapes=[],tool='num',S=null,E=null,tmp=null,key='',fps=30,nid=1,lastNew=null;
+const TOOLS={mv:'✋ Flytta',ball:'🟠 Boll',num:'① Anfallsspelare',x:'✖ Försvarare',pen:'✏️ Penna',line:'╱ Linje',arrow:'➜ Pil',circle:'◯ Cirkel',rect:'▭ Ruta',text:'T Text'};
+Object.entries(TOOLS).forEach(([k,l])=>{const b=document.createElement('button');b.textContent=l;b.dataset.k=k;b.onclick=()=>{tool=k;mark()};$('tools').append(b)});
+function mark(){[...$('tools').children].forEach(b=>b.classList.toggle('on',b.dataset.k==tool))}mark();
+const st=m=>$('st').textContent=m,fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+':'+(t%60).toFixed(1).padStart(4,'0')};
+// ---------- film ----------
+function load(file){if(!file)return;if(ct)setCt(null);v.src=URL.createObjectURL(file);key='sa:'+file.name+':'+file.size;$('drop').style.display='none';
+ v.onloadedmetadata=()=>{$('wrap').style.aspectRatio=v.videoWidth+'/'+v.videoHeight;$('wrap').style.width=`min(100%,${64*v.videoWidth/v.videoHeight}vh)`;fit();
+  try{clips=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){clips=[]}try{frames=JSON.parse(localStorage.getItem(key+':f')||'null')||[JSON.parse(localStorage.getItem(key+':b')||'[]')]}catch(e){frames=[[]]}fi=0;board=frames[0];nid=clips.reduce((a,c)=>Math.max(a,c.id),0)+1;cur=null;shapes=[];S=E=null;list();draw();info();st('Film inläst: '+file.name)}}
+$('f').onchange=e=>load(e.target.files[0]);
+document.body.ondragover=e=>e.preventDefault();document.body.ondrop=e=>{e.preventDefault();load(e.dataTransfer.files[0])};
+function save(){try{localStorage.setItem(key,JSON.stringify(clips));localStorage.setItem(key+':f',JSON.stringify(frames))}catch(e){}}
+// ---------- spelare ----------
+$('pp').onclick=toggle;function toggle(){v.paused?v.play():v.pause()}
+v.onplay=()=>$('pp').textContent='⏸ Paus';v.onpause=()=>$('pp').textContent='▶ Spela';
+const seek=d=>{v.currentTime=Math.min(v.duration||0,Math.max(0,v.currentTime+d))};
+$('b1').onclick=()=>seek(-5);$('b2').onclick=()=>seek(5);$('bf1').onclick=()=>{v.pause();seek(-1/fps)};$('bf2').onclick=()=>{v.pause();seek(1/fps)};
+$('sp').onchange=()=>v.playbackRate=+$('sp').value;
+$('sk').oninput=()=>v.currentTime=$('sk').value/1000*(v.duration||0);
+v.ontimeupdate=()=>{$('sk').value=v.duration?v.currentTime/v.duration*1000:0;info();
+ if(cur&&!v.paused&&v.currentTime>=cur.e){if(queue.length)play(queue.shift());else if($('lp').checked)v.currentTime=cur.s;else v.pause()}};
+function info(){$('tm').textContent=fmt(v.currentTime)+' / '+fmt(v.duration)}
+// ---------- handboll ----------
+let pn=1,dmode=true,ct=null,stash=null,board=[],frames=[board],fi=0,anim=null,seqOn=false,drag=null,queue=[],pend=[];
+const TAGS=['⚽ Mål','🥅 Räddning','❌ Missat skott','⚠️ Tekniskt fel','🟨 Utvisning','🎯 7-meter','👍 Bra','🔧 Förbättra'];
+$('ft').innerHTML='<option value="">Alla taggar</option>'+TAGS.map(t=>`<option>${t}</option>`).join('');$('ft').onchange=()=>list();
+const tagArr=()=>cur?(cur.g||(cur.g=[])):pend;
+function chips(){const g=$('gs');g.innerHTML='';TAGS.forEach(t=>{const b=document.createElement('button');b.textContent=t;b.classList.toggle('on',tagArr().includes(t));
+ b.onclick=()=>{const a=tagArr(),i=a.indexOf(t);i<0?a.push(t):a.splice(i,1);save();chips();if(cur)list()};g.append(b)})}
+function goalSide(x,m,ox,oy,d){x.save();x.translate(ox,oy);x.scale(d*m,m);x.strokeStyle='#fff';x.lineWidth=.1;x.strokeRect(-1,8.5,1,3);
+ const z=r=>{x.beginPath();x.arc(0,8.5,r,-Math.PI/2,0);x.lineTo(r,11.5);x.arc(0,11.5,r,0,Math.PI/2);x.stroke()};
+ z(6);x.setLineDash([.6,.4]);z(9);x.setLineDash([]);
+ x.beginPath();x.moveTo(7,9.5);x.lineTo(7,10.5);x.moveTo(4,9.925);x.lineTo(4,10.075);x.stroke();x.restore()}
+function drawCourt(x,W,H,half){const L=half?20:40,m=W/(L+2);x.fillStyle='#24597f';x.fillRect(0,0,W,H);x.fillStyle='#3a82b5';x.fillRect(m,m,L*m,20*m);
+ x.strokeStyle='#fff';x.lineWidth=.1*m;x.strokeRect(m,m,L*m,20*m);
+ if(!half){x.beginPath();x.moveTo(21*m,m);x.lineTo(21*m,21*m);x.stroke()}
+ goalSide(x,m,m,m,1);if(!half)goalSide(x,m,41*m,m,-1)}
+function setCt(m){if(m&&!ct){v.pause();stash={cur,shapes};cur=null;shapes=board}
+ if(!m&&ct){board=shapes;cur=stash.cur;shapes=stash.shapes;stash=null}
+ ct=m;const w=$('wrap');
+ if(m){const sp=(m=='half'?20:40)+2;w.style.aspectRatio=sp+'/22';w.style.width=`min(100%,${64*sp/22}vh)`}
+ else if(v.videoWidth){w.style.aspectRatio=v.videoWidth+'/'+v.videoHeight;w.style.width=`min(100%,${64*v.videoWidth/v.videoHeight}vh)`}
+ else{w.style.aspectRatio='16/9';w.style.width='100%'}
+ $('drop').style.display=(m||v.videoWidth)?'none':'flex';$('fr').style.display=m?'flex':'none';if(!m)seqOn=false;frInfo();
+ $('ctb').textContent=m=='full'?'🏟 Hel plan':m=='half'?'🏟 Halv plan':'🏟 Plan';$('ctb').classList.toggle('on',!!m);list();fit()}
+$('ctb').onclick=()=>setCt(!ct?'full':ct=='full'?'half':null);
+$('sn').onclick=()=>{const o=document.createElement('canvas');let W,H;
+ if(ct){const sp=(ct=='half'?20:40)+2;W=sp*50;H=W*22/sp;o.width=W;o.height=H;const x=o.getContext('2d');drawCourt(x,W,H,ct=='half');drawAll(x,W,H,shapes)}
+ else{if(!v.videoWidth)return;W=v.videoWidth;H=v.videoHeight;o.width=W;o.height=H;const x=o.getContext('2d');x.drawImage(v,0,0,W,H);drawAll(x,W,H,shapes)}
+ o.toBlob(b=>ready((ct?'taktik_':'bild_')+Date.now()+'.png',b),'image/png')};
+const SUB={A:['Uppställt anfall','Kontring','Snabbt uppspel','Överläge','7-meter','Frikast'],F:['6-0','5-1','3-2-1','4-2','Återgång','Underläge','Spelare ut']};
+function subs(){$('sub').innerHTML=SUB[$('ty').value].map(x=>`<option>${x}</option>`).join('')}$('ty').onchange=subs;subs();
+// ---------- spelsekvens ----------
+const MK=s=>/^(num|x|ball)$/.test(s.k);
+function frInfo(){$('fi').textContent='Ruta '+(fi+1)+'/'+frames.length}
+function gotoFrame(i){fi=Math.max(0,Math.min(frames.length-1,i));board=frames[fi];shapes=board;frInfo();draw()}
+$('fp').onclick=()=>gotoFrame(fi-1);$('fn').onclick=()=>gotoFrame(fi+1);
+$('fa').onclick=()=>{const nf=frames[fi].filter(MK).map(s=>({...s,a:[...s.a]}));frames.splice(fi+1,0,nf);gotoFrame(fi+1);save();st('Ny ruta skapad med spelarna kvar. Flytta dem (✋) och rita nya pilar.')};
+$('fd').onclick=()=>{if(frames.length<2)return;frames.splice(fi,1);gotoFrame(Math.min(fi,frames.length-1));save()};
+function blend(a,b,t){const e=t<.5?2*t*t:1-2*(1-t)*(1-t),am={};a.filter(MK).forEach(s=>{if(s.id)am[s.id]=s});
+ return[b.filter(MK).map(s=>{const o=am[s.id];return o?{...s,a:[o.a[0]+(s.a[0]-o.a[0])*e,o.a[1]+(s.a[1]-o.a[1])*e]}:s}),b.filter(s=>!MK(s))]}
+function paintAnim(x,W,H,A){const[mk,ln]=blend(A.a,A.b,A.t);x.globalAlpha=A.t;drawAll(x,W,H,ln);x.globalAlpha=1;drawAll(x,W,H,mk)}
+function runSeq(render,sp){return new Promise(res=>{const D=1400/sp,Hd=700/sp,n=frames.length,tot=Hd+(n-1)*(D+Hd),t0=performance.now();
+ const step=now=>{if(!seqOn){res();return}const e=now-t0;let A;
+  if(e>=tot){A={a:frames[n-1],b:frames[n-1],t:1};render(A);res();return}
+  if(e<Hd)A={a:frames[0],b:frames[0],t:1};else{const q=(e-Hd)/(D+Hd),k=Math.floor(q),r=(q-k)*(D+Hd);A={a:frames[k],b:frames[k+1],t:r<D?r/D:1}}
+  render(A);requestAnimationFrame(step)};requestAnimationFrame(step)})}
+function endSeq(){seqOn=false;anim=null;$('sq').textContent='▶ Spela sekvens';if(ct)gotoFrame(fi)}
+$('sq').onclick=async()=>{if(seqOn){seqOn=false;return}if(frames.length<2){st('Skapa minst två rutor med ＋ Ny ruta.');return}
+ seqOn=true;$('sq').textContent='⏹ Stoppa';await runSeq(A=>{anim=A;draw()},+$('ssp').value);endSeq()};
+$('fe').onclick=async()=>{if(!ct||seqOn)return;if(frames.length<2||!window.MediaRecorder){st('Skapa minst två rutor (och använd en webbläsare med MediaRecorder).');return}
+ const sp=(ct=='half'?20:40)+2,W=sp*30,H=Math.round(W*22/sp),o=document.createElement('canvas');o.width=W;o.height=H;const x=o.getContext('2d');
+ const mt=['video/mp4','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported(t)),ext=mt&&mt.includes('mp4')?'mp4':'webm',ch=[];
+ const rec=new MediaRecorder(o.captureStream(30),mt?{mimeType:mt,videoBitsPerSecond:6e6}:{});rec.ondataavailable=e=>ch.push(e.data);
+ rec.onstop=()=>ready('spelsekvens.'+ext,new Blob(ch,{type:mt||'video/webm'}));
+ const half=ct=='half';rec.start();seqOn=true;st('Spelar in sekvensen…');
+ await runSeq(A=>{x.clearRect(0,0,W,H);drawCourt(x,W,H,half);paintAnim(x,W,H,A);anim=A;draw()},+$('ssp').value);
+ await new Promise(r=>setTimeout(r,400));rec.stop();endSeq()};
+// ---------- statistik ----------
+const sm=(c,t,u,g)=>(!t||c.t==t)&&(!u||(c.u||'Övrigt')==u)&&(!g||(c.g||[]).includes(g));
+const subsOf=t=>[...new Set(clips.filter(c=>c.t==t).map(c=>c.u||'Övrigt'))].sort((a,b)=>SUB[t].indexOf(a)-SUB[t].indexOf(b));
+function showStats(){let h='<tr><th>Typ</th><th>Klipp</th>'+TAGS.map(t=>`<th>${t.split(' ')[0]}<br><small>${t.split(' ').slice(1).join(' ')}</small></th>`).join('')+'<th>Mål-%</th></tr>';
+ const cell=(n,t,u,g)=>n?`<td class="num" data-t="${t}" data-u="${u}" data-g="${g}">${n}</td>`:'<td>–</td>';
+ const line=(lb,t,u,cls)=>{const cs=clips.filter(c=>sm(c,t,u,''));const n=cs.length,go=cs.filter(c=>(c.g||[]).includes(TAGS[0])).length;
+  return`<tr class="${cls||''}"><td>${lb}</td>${cell(n,t,u,'')}${TAGS.map(g=>cell(cs.filter(c=>(c.g||[]).includes(g)).length,t,u,g)).join('')}<td>${n?Math.round(go/n*100)+'%':'–'}</td></tr>`};
+ if(!clips.length)h+='<tr><td colspan="11">Inga klipp ännu.</td></tr>';
+ ['A','F'].forEach(t=>{const us=subsOf(t);if(!us.length)return;h+=line(t=='A'?'🟠 ANFALL totalt':'🔵 FÖRSVAR totalt',t,'','tot');us.forEach(u=>h+=line('&nbsp;&nbsp;&nbsp;'+u,t,u,''))});
+ if(clips.length)h+=line('TOTALT','','','tot');$('tb').innerHTML=h;$('md').style.display='block'}
+$('stb').onclick=showStats;$('mc').onclick=()=>$('md').style.display='none';
+$('tb').onclick=e=>{const td=e.target.closest('td.num');if(!td)return;const{t,u,g}=td.dataset;queue=clips.filter(c=>sm(c,t,u,g));$('md').style.display='none';
+ if(queue.length){st('Spelar upp '+queue.length+' klipp i följd.');play(queue.shift())}};
+$('csv').onclick=()=>{const r=[['Typ','Undertyp','Klipp',...TAGS.map(t=>t.replace(/^\S+\s/,'')),'Mål-%']];
+ ['A','F'].forEach(t=>subsOf(t).forEach(u=>{const cs=clips.filter(c=>sm(c,t,u,''));r.push([t=='A'?'Anfall':'Försvar',u,cs.length,...TAGS.map(g=>cs.filter(c=>(c.g||[]).includes(g)).length),Math.round(cs.filter(c=>(c.g||[]).includes(TAGS[0])).length/cs.length*100)])}));
+ dl('statistik.csv',new Blob(['\ufeff'+r.map(x=>x.join(';')).join('\n')],{type:'text/csv'}))};
+// ---------- klipp ----------
+$('ms').onclick=setS;$('me').onclick=setE;
+function setS(){S=v.currentTime;$('sv').textContent=fmt(S)}
+function setE(){E=v.currentTime;$('ev').textContent=fmt(E)}
+$('sc').onclick=addClip;
+function addClip(){if(ct){st('Gå ur planläget (tryck Plan tills den är av) för att spara klipp.');return}if(S==null||E==null||E<=S){st('Markera start och slut (slut måste vara efter start).');return}
+ const n=clips.filter(c=>c.t==$('ty').value).length+1,t=$('ty').value;
+ const c={id:nid++,t,g:[...pend],u:$('sub').value,s:S,e:E,n:$('nm').value||($('sub').value+' '+n),shapes:JSON.parse(JSON.stringify(shapes))};
+ clips.push(c);pend=[];save();cur=c;shapes=c.shapes;S=E=null;$('sv').textContent=$('ev').textContent='–';$('nm').value='';list();st('Klipp sparat.')}
+function list(){chips();const L=$('list');L.innerHTML='';const f=$('fl').value,ftg=$('ft').value;
+ clips.filter(c=>(!f||c.t==f)&&(!ftg||(c.g||[]).includes(ftg))).forEach(c=>{const d=document.createElement('div');d.className='clip'+(cur==c?' sel':'');
+  d.innerHTML=`<span class="tag ${c.t}">${c.t=='A'?'A':'F'}</span><span class="nm" title="${fmt(c.s)}–${fmt(c.e)}"></span><small>${(c.e-c.s).toFixed(1)}s</small><button title="Exportera video">🎞</button><button title="Ta bort">✕</button>`;
+  const nm=d.querySelector('.nm');nm.textContent=c.n+((c.g&&c.g.length)?'  '+c.g.map(g=>g.split(' ')[0]).join(''):'');nm.onclick=()=>{queue=[];play(c)};nm.ondblclick=()=>{const x=prompt('Nytt namn',c.n);if(x){c.n=x;save();list()}};
+  const [b1,b2]=d.querySelectorAll('button');b1.onclick=()=>exportClip(c);b2.onclick=()=>{if(confirm('Ta bort klippet?')){clips=clips.filter(x=>x!=c);if(cur==c){cur=null;shapes=[]}save();list();draw()}};L.append(d)});
+ const bar=$('bar');bar.innerHTML='';clips.forEach(c=>{const i=document.createElement('i');i.style.left=c.s/v.duration*100+'%';i.style.width=Math.max(.4,(c.e-c.s)/v.duration*100)+'%';i.style.background=c.t=='A'?'var(--an)':'var(--fo)';bar.append(i)})}
+$('fl').onchange=list;
+function play(c){if(ct)setCt(null);cur=c;shapes=c.shapes;v.currentTime=c.s;v.playbackRate=+$('sp').value;v.play();list();draw()}
+// ---------- rita ----------
+const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
+cv.onpointerdown=e=>{if(!v.videoWidth&&!ct)return;const p=pos(e),c=$('co').value,w=+$('lw').value;
+ if(tool=='mv'){const r=cv.getBoundingClientRect();let best=null,bd=30;shapes.forEach(s=>{if(/^(num|x|ball)$/.test(s.k)){const d=Math.hypot((p[0]-s.a[0])*r.width,(p[1]-s.a[1])*r.height);if(d<bd){bd=d;best=s}}});
+  if(best){drag=best;cv.setPointerCapture(e.pointerId)}return}
+ if(tool=='ball'){push({k:'ball',c:'#ff9800',w,a:p});return}
+ if(tool=='num'||tool=='x'){const s2=tool=='num'?String(pn):'';if(tool=='num')pn=pn%7+1;push({k:tool,c,w,a:p,s:s2});return}
+ if(tool=='text'){const s=prompt('Text:');if(s)push({k:'text',c,w,a:p,s});return}
+ cv.setPointerCapture(e.pointerId);tmp=tool=='pen'?{k:'pen',c,w,p:[p]}:{k:tool,c,w,a:p,b:p};draw()};
+cv.onpointermove=e=>{if(drag){drag.a=pos(e);draw();return}if(!tmp)return;const p=pos(e);tmp.k=='pen'?tmp.p.push(p):tmp.b=p;draw()};
+cv.onpointerup=()=>{if(drag){drag=null;if(cur)cur.shapes=shapes;save();return}if(tmp){push(tmp);tmp=null}};
+function push(s){if(/^(num|x|ball)$/.test(s.k))s.id=Math.random().toString(36).slice(2);if(!cur&&!shapes.length&&false)return;shapes.push(s);if(cur)cur.shapes=shapes;save();draw()}
+$('un').onclick=undo;function undo(){shapes.pop();if(cur)cur.shapes=shapes;save();draw()}
+$('cl').onclick=()=>{pn=1;shapes.length=0;if(cur)cur.shapes=shapes;save();draw()};
+function drawAll(x,W,H,arr){const k=W/1000;x.lineCap=x.lineJoin='round';
+ arr.forEach(s=>{x.strokeStyle=x.fillStyle=s.c;x.lineWidth=s.w*k;const X=p=>p[0]*W,Y=p=>p[1]*H;x.beginPath();
+  if(s.k=='pen'){s.p.forEach((p,i)=>i?x.lineTo(X(p),Y(p)):x.moveTo(X(p),Y(p)));x.stroke()}
+  else if(s.k=='line'||s.k=='arrow'){x.moveTo(X(s.a),Y(s.a));x.lineTo(X(s.b),Y(s.b));x.stroke();
+   if(s.k=='arrow'){const a=Math.atan2(Y(s.b)-Y(s.a),X(s.b)-X(s.a)),L=s.w*k*4+10*k;x.beginPath();x.moveTo(X(s.b),Y(s.b));
+    x.lineTo(X(s.b)-L*Math.cos(a-.4),Y(s.b)-L*Math.sin(a-.4));x.lineTo(X(s.b)-L*Math.cos(a+.4),Y(s.b)-L*Math.sin(a+.4));x.closePath();x.fill()}}
+  else if(s.k=='circle'){const rx=Math.abs(X(s.b)-X(s.a))/2,ry=Math.abs(Y(s.b)-Y(s.a))/2;x.ellipse((X(s.a)+X(s.b))/2,(Y(s.a)+Y(s.b))/2,rx,ry,0,0,7);x.stroke()}
+  else if(s.k=='rect'){x.strokeRect(X(s.a),Y(s.a),X(s.b)-X(s.a),Y(s.b)-Y(s.a))}
+  else if(s.k=='ball'){x.arc(X(s.a),Y(s.a),(7+s.w*.6)*k,0,7);x.fill();x.strokeStyle='#000';x.lineWidth=2*k;x.stroke()}
+  else if(s.k=='num'||s.k=='x'){const r=(12+s.w*1.5)*k,cx0=X(s.a),cy0=Y(s.a);
+   if(s.k=='num'){x.arc(cx0,cy0,r,0,7);x.fill();x.fillStyle='#000';x.font=`bold ${r*1.2}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText(s.s,cx0,cy0+r*.05);x.textAlign='left';x.textBaseline='alphabetic'}
+   else{x.lineWidth=Math.max(3*k,s.w*k*.9);x.moveTo(cx0-r,cy0-r);x.lineTo(cx0+r,cy0+r);x.moveTo(cx0+r,cy0-r);x.lineTo(cx0-r,cy0+r);x.stroke()}}
+  else if(s.k=='text'){x.font=`bold ${(14+s.w*2)*k}px sans-serif`;x.lineWidth=3*k;x.strokeStyle='#000';x.strokeText(s.s,X(s.a),Y(s.a));x.fillText(s.s,X(s.a),Y(s.a))}})}
+function fit(){const d=devicePixelRatio||1,r=cv.getBoundingClientRect();cv.width=r.width*d;cv.height=r.height*d;draw()}
+function draw(){cx.clearRect(0,0,cv.width,cv.height);if(ct)drawCourt(cx,cv.width,cv.height,ct=='half');if(anim)paintAnim(cx,cv.width,cv.height,anim);else drawAll(cx,cv.width,cv.height,tmp?[...shapes,tmp]:shapes)}
+new ResizeObserver(fit).observe($('wrap'));
+$('dm').onclick=()=>{dmode=!dmode;cv.style.pointerEvents=dmode?'auto':'none';$('dm').textContent=dmode?'✏️ Rita på':'✋ Rita av';$('dm').classList.toggle('on',dmode)};
+v.onclick=()=>{if(!dmode)toggle()};
+function ready(name,blob){const b=document.createElement('button');b.textContent='💾 Spara/dela: '+name;
+ b.onclick=async()=>{const f=new File([blob],name,{type:blob.type});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name=='AbortError')return}}dl(name,blob)};
+ $('ready').append(b);st('Klart! Tryck på den gröna knappen för att spara eller dela.')}
+// ---------- export ----------
+function dl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+const safe=s=>s.replace(/[^\wåäöÅÄÖ-]+/g,'_');
+async function exportClip(c){if(!v.videoWidth)return;if(!window.MediaRecorder){st('Webbläsaren saknar MediaRecorder.');return}
+ const W=v.videoWidth,H=v.videoHeight,o=document.createElement('canvas');o.width=W;o.height=H;const x=o.getContext('2d');
+ const stream=o.captureStream(30);try{const vs=v.captureStream();vs.getAudioTracks().forEach(t=>stream.addTrack(t))}catch(e){}
+ const mt=['video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+ const ext=mt&&mt.includes('mp4')?'mp4':'webm',rec=new MediaRecorder(stream,mt?{mimeType:mt,videoBitsPerSecond:8e6}:{}),ch=[];rec.ondataavailable=e=>ch.push(e.data);
+ v.pause();v.playbackRate=1;await new Promise(r=>{v.onseeked=r;v.currentTime=c.s});v.onseeked=null;
+ st('Exporterar "'+c.n+'" i realtid – lämna fliken öppen…');
+ rec.onstop=()=>{ready(safe(c.n)+'.'+ext,new Blob(ch,{type:mt||'video/webm'}));v.pause()};
+ const loop=()=>{x.drawImage(v,0,0,W,H);drawAll(x,W,H,c.shapes);if(v.currentTime>=c.e||v.ended){rec.stop();return}requestAnimationFrame(loop)};
+ rec.start();v.play();loop()}
+$('ej').onclick=()=>dl('klipp.json',new Blob([JSON.stringify(clips,null,1)],{type:'application/json'}));
+$('ij').onchange=e=>{const r=new FileReader();r.onload=()=>{try{const a=JSON.parse(r.result);a.forEach(c=>{c.id=nid++;clips.push(c)});save();list();st('Klipp inlästa.')}catch(x){st('Ogiltig fil.')}};r.readAsText(e.target.files[0])};
+$('ff').onclick=()=>{const f=(document.getElementById('f').files[0]||{}).name||'film.mp4';
+ const L=clips.map(c=>`ffmpeg -ss ${c.s.toFixed(2)} -to ${c.e.toFixed(2)} -i "${f}" -c:v libx264 -c:a aac "${safe(c.n)}_${c.id}.mp4"`);
+ dl('klipp_ffmpeg.txt',new Blob(['# Kräver ffmpeg. Kör raderna i samma mapp som filmen (ritningar ingår inte).\n'+L.join('\n')],{type:'text/plain'}))};
+// ---------- kortkommandon ----------
+addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)&&e.target.type!='range'&&e.target.type!='checkbox')return;
+ if(e.ctrlKey&&e.key=='z'){undo();return}
+ const m={' ':toggle,i:setS,o:setE,Enter:addClip,ArrowLeft:()=>seek(-5),ArrowRight:()=>seek(5),',':()=>{v.pause();seek(-1/fps)},'.':()=>{v.pause();seek(1/fps)}}[e.key];
+ if(m){e.preventDefault();m()}});
+chips();
+</script></body></html>
